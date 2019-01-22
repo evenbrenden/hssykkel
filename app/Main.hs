@@ -15,8 +15,8 @@ data Availability = Availability {
 
 instance ToJSON Availability where
   toJSON p = object [
-    "bikes" .= bikes p,
-    "locks"  .= locks p ]
+    "bikes"     .= bikes p,
+    "locks"     .= locks p ]
 
 instance FromJSON Availability where
   parseJSON (Object v) =
@@ -24,47 +24,86 @@ instance FromJSON Availability where
                  <*> v .: "locks"
   parseJSON v = typeMismatch "Availability" v
 
-data Station = Station {
-    id :: Int,
-    availability :: Availability
+data AvailabilityStation = AvailabilityStation {
+    availabilityId  :: Int,
+    availability    :: Availability
 } deriving Show
 
-instance ToJSON Station where
+instance ToJSON AvailabilityStation where
   toJSON p = object [
-    "id" .= Main.id p,
+    "id"            .= availabilityId p,
     "availability"  .= availability p ]
 
-instance FromJSON Station where
+instance FromJSON AvailabilityStation where
   parseJSON (Object v) =
-    Station <$> v .: "id"
-            <*> v .: "availability"
-  parseJSON v = typeMismatch "Station" v
+    AvailabilityStation <$> v .: "id"
+                        <*> v .: "availability"
+  parseJSON v = typeMismatch "AvailabilityStation" v
 
-data Stations = Stations {
-    stations :: [Station]
+data AvailabilityStations = AvailabilityStations {
+    aStations :: [AvailabilityStation]
 } deriving Show
 
-instance ToJSON Stations where
+instance ToJSON AvailabilityStations where
   toJSON p = object [
-    "stations" .= stations p ]
+    "stations" .= aStations p ]
 
-instance FromJSON Stations where
+instance FromJSON AvailabilityStations where
   parseJSON (Object v) =
-    Stations <$> v .: "stations"
-  parseJSON v = typeMismatch "Stations" v
+    AvailabilityStations <$> v .: "stations"
+  parseJSON v = typeMismatch "AvailabilityStations" v
 
-decode :: L.ByteString -> Maybe Stations
-decode = J.decode
+data TitleStation = TitleStation {
+    titleId     :: Int,
+    title       :: String,
+    subtitle    :: String
+} deriving Show
 
--- "{\"stations\":[{\"id\":177,\"availability\":{\"bikes\":0,\"locks\":29,\"overflow_capacity\":false}}],\"updated_at\":\"2019-01-22T13:08:29+00:00\",\"refresh_rate\":10.0}"
+instance ToJSON TitleStation where
+  toJSON p = object [
+    "id"        .= titleId p,
+    "title"     .= title p,
+    "subtitle"  .= subtitle p ]
+
+instance FromJSON TitleStation where
+  parseJSON (Object v) =
+    TitleStation <$> v .: "id"
+                 <*> v .: "title"
+                 <*> v .: "subtitle"
+  parseJSON v = typeMismatch "TitleStation" v
+
+data TitleStations = TitleStations {
+    titleStations :: [TitleStation]
+} deriving Show
+
+instance ToJSON TitleStations where
+  toJSON p = object [
+    "stations" .= titleStations p ]
+
+instance FromJSON TitleStations where
+  parseJSON (Object v) =
+    TitleStations <$> v .: "stations"
+  parseJSON v = typeMismatch "TitleStations" v
+
+decodeAvailability :: L.ByteString -> Maybe AvailabilityStations
+decodeAvailability = J.decode
+
+decodeTitles :: L.ByteString -> Maybe TitleStations
+decodeTitles = J.decode
 
 main :: IO ()
 main = do
     tokentxt <- liftIO $ readFile "token.txt"
     let token = B.pack . head . words $ tokentxt
-    let request =
+    let availabilityRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations/availability"
-    response <- httpLBS request
-    let stations = fromJust $ Main.decode (getResponseBody response)
-    putStrLn $ show stations
+    availabilityResponse <- httpLBS availabilityRequest
+    let availabilityStations = fromJust $ Main.decodeAvailability (getResponseBody availabilityResponse)
+    putStrLn $ show availabilityStations
+    let titlesRequest =
+            setRequestHeader "Client-Identifier" [token]
+            $ "GET http://oslobysykkel.no/api/v1/stations"
+    titlesResponse <- httpLBS titlesRequest
+    let titleStations = fromJust $ Main.decodeTitles (getResponseBody titlesResponse)
+    putStrLn $ show titleStations
