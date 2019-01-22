@@ -37,6 +37,7 @@ executables:
     - sykkel
     - bytestring
     - http-conduit
+    - aeson
 
 tests:
   sykkel-test:
