@@ -9,17 +9,17 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Aeson as J
 import Types
 
-decodeAvailabilities :: L.ByteString -> Maybe AvailabilityStations
-decodeAvailabilities = J.decode
+decodeAvailabilityStations :: L.ByteString -> Maybe AvailabilityStations
+decodeAvailabilityStations = J.decode
 
-decodeTitles :: L.ByteString -> Maybe TitleStations
-decodeTitles = J.decode
+decodeTitleStations :: L.ByteString -> Maybe TitleStations
+decodeTitleStations = J.decode
 
 comprehend :: AvailabilityStations -> TitleStations -> [(AvailabilityStation, TitleStation)]
 comprehend as ts = do
     x <- availabilityStations as
     y <- titleStations ts
-    guard (availabilityId x == titleId y)
+    guard (availabilityStationId x == titleStationId y)
     return (x, y)
 
 toString :: (AvailabilityStation, TitleStation) -> String
@@ -29,15 +29,15 @@ main :: IO ()
 main = do
     tokentxt <- liftIO $ readFile "token.txt"
     let token = B.pack . head . words $ tokentxt
-    let availabilitiesRequest =
+    let availabilityStationsRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations/availability"
-    availabilitiesResponse <- httpLBS availabilitiesRequest
-    let availabilitiesStations = fromJust $ Main.decodeAvailabilities (getResponseBody availabilitiesResponse)
-    let titlesRequest =
+    availabilityStationsResponse <- httpLBS availabilityStationsRequest
+    let availabilityStations = fromJust $ Main.decodeAvailabilityStations (getResponseBody availabilityStationsResponse)
+    let titleStationsRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations"
-    titlesResponse <- httpLBS titlesRequest
-    let titleStations = fromJust $ Main.decodeTitles (getResponseBody titlesResponse)
-    let comprehended = comprehend availabilitiesStations titleStations
+    titleStationsResponse <- httpLBS titleStationsRequest
+    let titleStations = fromJust $ Main.decodeTitleStations (getResponseBody titleStationsResponse)
+    let comprehended = comprehend availabilityStations titleStations
     putStrLn $ unlines (map toString comprehended)

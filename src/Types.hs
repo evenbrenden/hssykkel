@@ -6,20 +6,20 @@ module Types where
 import Data.Aeson.Types
 
 data AvailabilityStation = AvailabilityStation {
-    availabilityId  :: Int,
+    availabilityStationId  :: Int,
     bikes           :: Int,
     locks           :: Int
 } deriving Show
 
 instance ToJSON AvailabilityStation where
   toJSON x = object [
-    "id"    .= availabilityId x,
+    "id" .= availabilityStationId x,
     "bikes" .= locks x,
     "locks" .= bikes x ]
 
 instance FromJSON AvailabilityStation where
   parseJSON = withObject "availabilityStation" $ \o -> do
-    availabilityId <- o .: "id"
+    availabilityStationId <- o .: "id"
     availability <- o .: "availability"
     bikes <- availability .: "bikes"
     locks <- availability .: "locks"
@@ -38,20 +38,20 @@ instance FromJSON AvailabilityStations where
     return AvailabilityStations{..}
 
 data TitleStation = TitleStation {
-    titleId     :: Int,
-    title       :: String,
-    subtitle    :: String
+    titleStationId :: Int,
+    title :: String,
+    subtitle :: String
 } deriving Show
 
 instance ToJSON TitleStation where
   toJSON x = object [
-    "id"        .= titleId x,
-    "title"     .= title x,
-    "subtitle"  .= subtitle x ]
+    "id" .= titleStationId x,
+    "title" .= title x,
+    "subtitle" .= subtitle x ]
 
 instance FromJSON TitleStation where
   parseJSON = withObject "titleStation" $ \o -> do
-    titleId <- o .: "id"
+    titleStationId <- o .: "id"
     title <- o .: "title"
     subtitle <- o .: "subtitle"
     return TitleStation{..}
