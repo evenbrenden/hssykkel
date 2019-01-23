@@ -14,15 +14,15 @@ data Availability = Availability {
 } deriving Show
 
 instance ToJSON Availability where
-  toJSON p = object [
-    "bikes"     .= bikes p,
-    "locks"     .= locks p ]
+  toJSON x = object [
+    "bikes"     .= bikes x,
+    "locks"     .= locks x ]
 
 instance FromJSON Availability where
-  parseJSON (Object v) =
-    Availability <$> v .: "bikes"
-                 <*> v .: "locks"
-  parseJSON v = typeMismatch "Availability" v
+  parseJSON (Object x) =
+    Availability <$> x .: "bikes"
+                 <*> x .: "locks"
+  parseJSON x = typeMismatch "Availability" x
 
 data AvailabilityStation = AvailabilityStation {
     availabilityId  :: Int,
@@ -30,28 +30,26 @@ data AvailabilityStation = AvailabilityStation {
 } deriving Show
 
 instance ToJSON AvailabilityStation where
-  toJSON p = object [
-    "id"            .= availabilityId p,
-    "availability"  .= availability p ]
+  toJSON x = object [
+    "id"            .= availabilityId x,
+    "availability"  .= availability x ]
 
 instance FromJSON AvailabilityStation where
-  parseJSON (Object v) =
-    AvailabilityStation <$> v .: "id"
-                        <*> v .: "availability"
-  parseJSON v = typeMismatch "AvailabilityStation" v
+  parseJSON (Object x) =
+    AvailabilityStation <$> x .: "id"
+                        <*> x .: "availability"
+  parseJSON x = typeMismatch "AvailabilityStation" x
 
 data AvailabilityStations = AvailabilityStations {
-    aStations :: [AvailabilityStation]
+    availabilityStations :: [AvailabilityStation]
 } deriving Show
 
 instance ToJSON AvailabilityStations where
-  toJSON p = object [
-    "stations" .= aStations p ]
+  toJSON x = object [ "stations" .= availabilityStations x ]
 
 instance FromJSON AvailabilityStations where
-  parseJSON (Object v) =
-    AvailabilityStations <$> v .: "stations"
-  parseJSON v = typeMismatch "AvailabilityStations" v
+  parseJSON (Object x) = AvailabilityStations <$> x .: "stations"
+  parseJSON x = typeMismatch "AvailabilityStations" x
 
 data TitleStation = TitleStation {
     titleId     :: Int,
@@ -60,50 +58,54 @@ data TitleStation = TitleStation {
 } deriving Show
 
 instance ToJSON TitleStation where
-  toJSON p = object [
-    "id"        .= titleId p,
-    "title"     .= title p,
-    "subtitle"  .= subtitle p ]
+  toJSON x = object [
+    "id"        .= titleId x,
+    "title"     .= title x,
+    "subtitle"  .= subtitle x ]
 
 instance FromJSON TitleStation where
-  parseJSON (Object v) =
-    TitleStation <$> v .: "id"
-                 <*> v .: "title"
-                 <*> v .: "subtitle"
-  parseJSON v = typeMismatch "TitleStation" v
+  parseJSON (Object x) =
+    TitleStation <$> x .: "id"
+                 <*> x .: "title"
+                 <*> x .: "subtitle"
+  parseJSON x = typeMismatch "TitleStation" x
 
 data TitleStations = TitleStations {
     titleStations :: [TitleStation]
 } deriving Show
 
 instance ToJSON TitleStations where
-  toJSON p = object [
-    "stations" .= titleStations p ]
+  toJSON x = object [ "stations" .= titleStations x ]
 
 instance FromJSON TitleStations where
-  parseJSON (Object v) =
-    TitleStations <$> v .: "stations"
-  parseJSON v = typeMismatch "TitleStations" v
+  parseJSON (Object x) = TitleStations <$> x .: "stations"
+  parseJSON x = typeMismatch "TitleStations" x
 
-decodeAvailability :: L.ByteString -> Maybe AvailabilityStations
-decodeAvailability = J.decode
+decodeAvailabilities :: L.ByteString -> Maybe AvailabilityStations
+decodeAvailabilities = J.decode
 
 decodeTitles :: L.ByteString -> Maybe TitleStations
 decodeTitles = J.decode
+
+comprehend :: AvailabilityStations -> TitleStations -> [(AvailabilityStation, TitleStation)]
+comprehend as ts = [(x, y) | x <- availabilityStations as, y <- titleStations ts, availabilityId x == titleId y]
+
+toString :: (AvailabilityStation, TitleStation) -> String
+toString (x, y) = title y ++ " " ++ subtitle y ++ " has " ++ show (bikes . availability $ x) ++  " available bikes and " ++ show (locks . availability $ x) ++ " available locks."
 
 main :: IO ()
 main = do
     tokentxt <- liftIO $ readFile "token.txt"
     let token = B.pack . head . words $ tokentxt
-    let availabilityRequest =
+    let availabilitiesRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations/availability"
-    availabilityResponse <- httpLBS availabilityRequest
-    let availabilityStations = fromJust $ Main.decodeAvailability (getResponseBody availabilityResponse)
-    putStrLn $ show availabilityStations
+    availabilitiesResponse <- httpLBS availabilitiesRequest
+    let availabilitiesStations = fromJust $ Main.decodeAvailabilities (getResponseBody availabilitiesResponse)
     let titlesRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations"
     titlesResponse <- httpLBS titlesRequest
     let titleStations = fromJust $ Main.decodeTitles (getResponseBody titlesResponse)
-    putStrLn $ show titleStations
+    let comprehended = comprehend availabilitiesStations titleStations
+    putStrLn $ unlines (map toString comprehended)
