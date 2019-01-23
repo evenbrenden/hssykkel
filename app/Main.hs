@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad (guard)
 import Network.HTTP.Simple
 import Data.Maybe
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -15,7 +16,11 @@ decodeTitles :: L.ByteString -> Maybe TitleStations
 decodeTitles = J.decode
 
 comprehend :: AvailabilityStations -> TitleStations -> [(AvailabilityStation, TitleStation)]
-comprehend as ts = [(x, y) | x <- availabilityStations as, y <- titleStations ts, availabilityId x == titleId y]
+comprehend as ts = do
+    x <- availabilityStations as
+    y <- titleStations ts
+    guard (availabilityId x == titleId y)
+    return (x, y)
 
 toString :: (AvailabilityStation, TitleStation) -> String
 toString (x, y) = title y ++ " " ++ subtitle y ++ " has " ++ show (bikes x) ++  " available bikes and " ++ show (locks x) ++ " available locks."
