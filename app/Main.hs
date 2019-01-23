@@ -7,18 +7,25 @@ import Data.Maybe
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Aeson as J
+import Data.Aeson.Types
 import Types
 
-decodeAvailabilityStations :: L.ByteString -> Maybe AvailabilityStations
-decodeAvailabilityStations = J.decode
+decode :: L.ByteString -> Maybe J.Value
+decode = J.decode
 
-decodeTitleStations :: L.ByteString -> Maybe TitleStations
-decodeTitleStations = J.decode
+parseStations :: FromJSON a => J.Value -> Parser a
+parseStations = withObject "stations" $ \o -> o .: "stations"
 
-comprehend :: AvailabilityStations -> TitleStations -> [(AvailabilityStation, TitleStation)]
-comprehend as ts = do
-    x <- availabilityStations as
-    y <- titleStations ts
+parseAvailabilityStations :: J.Value -> Parser [AvailabilityStation]
+parseAvailabilityStations = parseStations
+
+parseTitleStations :: J.Value -> Parser [TitleStation]
+parseTitleStations = parseStations
+
+comprehend :: [AvailabilityStation] -> [TitleStation] -> [(AvailabilityStation, TitleStation)]
+comprehend xs ys = do
+    x <- xs
+    y <- ys
     guard (availabilityStationId x == titleStationId y)
     return (x, y)
 
@@ -33,11 +40,13 @@ main = do
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations/availability"
     availabilityStationsResponse <- httpLBS availabilityStationsRequest
-    let availabilityStations = fromJust $ Main.decodeAvailabilityStations (getResponseBody availabilityStationsResponse)
+    let decodedAvailabilityStations = fromJust . decode $ getResponseBody availabilityStationsResponse
+    let availabilityStations = fromJust $ parseMaybe parseAvailabilityStations decodedAvailabilityStations
     let titleStationsRequest =
             setRequestHeader "Client-Identifier" [token]
             $ "GET http://oslobysykkel.no/api/v1/stations"
     titleStationsResponse <- httpLBS titleStationsRequest
-    let titleStations = fromJust $ Main.decodeTitleStations (getResponseBody titleStationsResponse)
+    let decodedTitleStations = fromJust . decode $ getResponseBody titleStationsResponse
+    let titleStations = fromJust $ parseMaybe parseTitleStations decodedTitleStations
     let comprehended = comprehend availabilityStations titleStations
-    putStrLn $ unlines (map toString comprehended)
+    putStrLn $ unlines (Prelude.map toString comprehended)

@@ -25,18 +25,6 @@ instance FromJSON AvailabilityStation where
     locks <- availability .: "locks"
     return AvailabilityStation{..}
 
-data AvailabilityStations = AvailabilityStations {
-    availabilityStations :: [AvailabilityStation]
-} deriving Show
-
-instance ToJSON AvailabilityStations where
-  toJSON x = object [ "stations" .= availabilityStations x ]
-
-instance FromJSON AvailabilityStations where
-  parseJSON = withObject "availabilityStations" $ \o -> do
-    availabilityStations <- o .: "stations"
-    return AvailabilityStations{..}
-
 data TitleStation = TitleStation {
     titleStationId :: Int,
     title :: String,
@@ -55,15 +43,3 @@ instance FromJSON TitleStation where
     title <- o .: "title"
     subtitle <- o .: "subtitle"
     return TitleStation{..}
-
-data TitleStations = TitleStations {
-    titleStations :: [TitleStation]
-} deriving Show
-
-instance ToJSON TitleStations where
-  toJSON x = object [ "stations" .= titleStations x ]
-
-instance FromJSON TitleStations where
-  parseJSON = withObject "titleStations" $ \o -> do
-    titleStations <- o .: "stations"
-    return TitleStations{..}
