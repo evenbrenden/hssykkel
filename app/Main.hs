@@ -18,7 +18,7 @@ comprehend :: AvailabilityStations -> TitleStations -> [(AvailabilityStation, Ti
 comprehend as ts = [(x, y) | x <- availabilityStations as, y <- titleStations ts, availabilityId x == titleId y]
 
 toString :: (AvailabilityStation, TitleStation) -> String
-toString (x, y) = title y ++ " " ++ subtitle y ++ " has " ++ show (bikes . availability $ x) ++  " available bikes and " ++ show (locks . availability $ x) ++ " available locks."
+toString (x, y) = title y ++ " " ++ subtitle y ++ " has " ++ show (bikes x) ++  " available bikes and " ++ show (locks x) ++ " available locks."
 
 main :: IO ()
 main = do

@@ -1,40 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Types where
 
 import Data.Aeson.Types
 
-data Availability = Availability {
-    bikes :: Int,
-    locks :: Int
-} deriving Show
-
-instance ToJSON Availability where
-  toJSON x = object [
-    "bikes"     .= bikes x,
-    "locks"     .= locks x ]
-
-instance FromJSON Availability where
-  parseJSON (Object x) =
-    Availability <$> x .: "bikes"
-                 <*> x .: "locks"
-  parseJSON x = typeMismatch "Availability" x
-
 data AvailabilityStation = AvailabilityStation {
     availabilityId  :: Int,
-    availability    :: Availability
+    bikes           :: Int,
+    locks           :: Int
 } deriving Show
 
 instance ToJSON AvailabilityStation where
   toJSON x = object [
-    "id"            .= availabilityId x,
-    "availability"  .= availability x ]
+    "id"    .= availabilityId x,
+    "bikes" .= locks x,
+    "locks" .= bikes x ]
 
 instance FromJSON AvailabilityStation where
-  parseJSON (Object x) =
-    AvailabilityStation <$> x .: "id"
-                        <*> x .: "availability"
-  parseJSON x = typeMismatch "AvailabilityStation" x
+  parseJSON = withObject "availabilityStation" $ \o -> do
+    availabilityId <- o .: "id"
+    availability <- o .: "availability"
+    bikes <- availability .: "bikes"
+    locks <- availability .: "locks"
+    return AvailabilityStation{..}
 
 data AvailabilityStations = AvailabilityStations {
     availabilityStations :: [AvailabilityStation]
@@ -44,8 +33,9 @@ instance ToJSON AvailabilityStations where
   toJSON x = object [ "stations" .= availabilityStations x ]
 
 instance FromJSON AvailabilityStations where
-  parseJSON (Object x) = AvailabilityStations <$> x .: "stations"
-  parseJSON x = typeMismatch "AvailabilityStations" x
+  parseJSON = withObject "availabilityStations" $ \o -> do
+    availabilityStations <- o .: "stations"
+    return AvailabilityStations{..}
 
 data TitleStation = TitleStation {
     titleId     :: Int,
@@ -60,11 +50,11 @@ instance ToJSON TitleStation where
     "subtitle"  .= subtitle x ]
 
 instance FromJSON TitleStation where
-  parseJSON (Object x) =
-    TitleStation <$> x .: "id"
-                 <*> x .: "title"
-                 <*> x .: "subtitle"
-  parseJSON x = typeMismatch "TitleStation" x
+  parseJSON = withObject "titleStation" $ \o -> do
+    titleId <- o .: "id"
+    title <- o .: "title"
+    subtitle <- o .: "subtitle"
+    return TitleStation{..}
 
 data TitleStations = TitleStations {
     titleStations :: [TitleStation]
@@ -74,5 +64,6 @@ instance ToJSON TitleStations where
   toJSON x = object [ "stations" .= titleStations x ]
 
 instance FromJSON TitleStations where
-  parseJSON (Object x) = TitleStations <$> x .: "stations"
-  parseJSON x = typeMismatch "TitleStations" x
+  parseJSON = withObject "titleStations" $ \o -> do
+    titleStations <- o .: "stations"
+    return TitleStations{..}
